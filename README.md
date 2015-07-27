@@ -5,6 +5,7 @@ A simple bluetooth manager block based to interact with peripherals for iOS
 # Installation
 
 Just use cocoapods `pod 'FABluetoothManager'`
+Or add the `FABluetoothManager.{h.m}` files to your project
 
 See [Cocoapods](https://cocoapods.org/)
 
@@ -13,10 +14,12 @@ See [Cocoapods](https://cocoapods.org/)
 ## 1.- Get an instance
 
 ```
+#import FABluetoothManager.h
+
 FABluetoothManager *manager = [FABluetoothManager manager];
 ```
 
-## Scan for peripherals
+## 2.- Scan for peripherals
 
 To start searching for peripherals use the function bellow:
 
@@ -29,7 +32,7 @@ you won't do on a real enviroment. See [Apple Bluetooth](https://developer.apple
 } services:nil];
 ```
 
-## Connect to peripheral
+## 3.- Connect to peripheral
 
 Before do any kind of comunication we need to connect to it.
 
@@ -49,13 +52,17 @@ ConnetPeripheralBlock completionBlock = ^(CBPeripheralState state, NSError* erro
 
 ## Discover services and characteristics
 
+Working...
+
 ## Read and write values for characteristics
+
+Working on more documentation...
 
 ## TODOS:
 
-Notifications
-Finish the README.
-Fix typos
+* Notifications
+* Finish the README.
+* Fix typos
 
 ## Author
 
