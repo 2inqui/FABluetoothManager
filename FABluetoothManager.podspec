@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
 
   s.platform     = :ios
   
-  s.source       = { :git => "http://EXAMPLE/FABluetoothManager.git", :tag => "0.0.1" }
+  s.source       = { :git => "https://github.com/2inqui/FABluetoothManager", :tag => "0.0.1" }
 
   s.source_files  = "FABluetoothManager/FABluetoothManager/**/*.{h,m}"
 
