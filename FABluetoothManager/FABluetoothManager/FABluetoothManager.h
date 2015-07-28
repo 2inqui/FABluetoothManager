@@ -61,9 +61,10 @@ typedef void (^CharacteristicsBlock)(NSArray* characteristics, NSError* error);
  *  Will try to connect to peripheral
  *
  *  @param peripheral CBPeriphetal to connect
- *  @param block      callback to deliver the result
+ *  @param block      callback to deliver the result for connection success
+ *  @param block      callback to deliver the result when disconnected
  */
-- (void)connectToPeripheral:(CBPeripheral*)peripheral completion:(ConnetPeripheralBlock)block;
+- (void)connectToPeripheral:(CBPeripheral *)peripheral connect:(ConnetPeripheralBlock)block disconnect:(ConnetPeripheralBlock)disconnect;
 
 /**
  *  Start searching for services in the given peripheral.
@@ -93,7 +94,7 @@ typedef void (^CharacteristicsBlock)(NSArray* characteristics, NSError* error);
  *  @param characteristic CBCharacteristic to read the value
  *  @param block          ReadValueBlock to deliver the result
  */
-- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block;
+- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block disconnect:(ConnetPeripheralBlock)disconnectBlock;;
 
 /**
  *  Write the data to a characteristic
@@ -104,8 +105,8 @@ typedef void (^CharacteristicsBlock)(NSArray* characteristics, NSError* error);
  *  @param peripheral     CBPeripheral to write the value
  *  @param block          WriteValueBlock callback used to deliver the result
  */
-- (void)writeValue:(NSData*)value characteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(WriteValueBlock)block;
+- (void)writeValue:(NSData*)value characteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(WriteValueBlock)block disconnect:(ConnetPeripheralBlock)disconnectBlock;;
 
-- (void)notifyCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block;
+- (void)notifyCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block disconnect:(ConnetPeripheralBlock)disconnectBlock;
 
 @end

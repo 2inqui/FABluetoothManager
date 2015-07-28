@@ -78,7 +78,7 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
     self.isSearchingPeripherals = NO;
 }
 
-- (void)connectToPeripheral:(CBPeripheral *)peripheral completion:(ConnetPeripheralBlock)block
+- (void)connectToPeripheral:(CBPeripheral *)peripheral connect:(ConnetPeripheralBlock)block disconnect:(ConnetPeripheralBlock)disconnect;
 {
     self.connectBlock = block;
     switch (peripheral.state) {
@@ -184,7 +184,7 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
-    self.connectBlock(peripheral.state, error);
+    self.disconnectBlock(peripheral.state, error);
 }
 
 #pragma mark - CBPeriphitalDelegate
@@ -247,7 +247,7 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
     return nil;
 }
 
-- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block
+- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block disconnect:(ConnetPeripheralBlock)disconnectBlock
 {
     CharacteristicsBlock characteristicsBlock = ^(NSArray* characteristics, NSError *error){
         if (!error) {
@@ -280,10 +280,12 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         }
     };
     
-    [self connectToPeripheral:peripheral completion:completionBlock];
+    [self connectToPeripheral:peripheral
+                      connect:completionBlock
+                   disconnect:disconnectBlock];
 }
 
-- (void)writeValue:(NSData*)value characteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(WriteValueBlock)block
+- (void)writeValue:(NSData*)value characteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(WriteValueBlock)block disconnect:(ConnetPeripheralBlock)disconnectBlock
 {
     CharacteristicsBlock characteristicsBlock = ^(NSArray* characteristics, NSError *error){
         if (!error) {
@@ -316,10 +318,12 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         }
     };
     
-    [self connectToPeripheral:peripheral completion:completionBlock];
+    [self connectToPeripheral:peripheral
+                      connect:completionBlock
+                   disconnect:disconnectBlock];
 }
 
-- (void)notifyCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block
+- (void)notifyCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block disconnect:(ConnetPeripheralBlock)disconnectBlock
 {
     CharacteristicsBlock characteristicsBlock = ^(NSArray* characteristics, NSError *error){
         if (!error) {
@@ -352,7 +356,9 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         }
     };
     
-    [self connectToPeripheral:peripheral completion:completionBlock];
+    [self connectToPeripheral:peripheral
+                      connect:completionBlock
+                   disconnect:disconnectBlock];
 }
 
 @end
