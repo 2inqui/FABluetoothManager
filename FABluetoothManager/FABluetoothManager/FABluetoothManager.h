@@ -13,11 +13,16 @@
 extern NSString * const kPeriphetalIdentifier;
 extern NSString * const kPeriphetalRSSIIdentifier;
 
+// Central callbacks
 typedef void (^ConnetPeripheralBlock)(CBPeripheralState state, NSError* error);
 typedef void (^PeripheralsBlock)(NSArray *peripherals, NSError* error);
+
+// Characteristics callbacks
 typedef void (^ReadValueBlock)(NSData* data, NSError* error);
 typedef void (^WriteValueBlock)(NSData* data, NSError* error);
+typedef void (^NotifyValueBlock)(NSData* data, NSError* error);
 
+// Peripheral callbacks
 typedef void (^ServicesBlock)(NSArray* services, NSError* error);
 typedef void (^CharacteristicsBlock)(NSArray* characteristics, NSError* error);
 
@@ -88,6 +93,19 @@ typedef void (^CharacteristicsBlock)(NSArray* characteristics, NSError* error);
  *  @param characteristic CBCharacteristic to read the value
  *  @param block          ReadValueBlock to deliver the result
  */
-- (void)readValue:(CBPeripheral*)peripheral characteristic:(CBCharacteristic*)characteristic completions:(ReadValueBlock)block;
+- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block;
+
+/**
+ *  Write the data to a characteristic
+ *
+ *  @param value          NSData to be written
+ *  @param characteristic CBCharacterictic where the data should be written
+ *  @param service        CBService where the characteristic belongs to
+ *  @param peripheral     CBPeripheral to write the value
+ *  @param block          WriteValueBlock callback used to deliver the result
+ */
+- (void)writeValue:(NSData*)value characteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(WriteValueBlock)block;
+
+- (void)notifyCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block;
 
 @end

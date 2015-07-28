@@ -16,12 +16,18 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 @interface FABluetoothManager () <CBCentralManagerDelegate, CBPeripheralDelegate>
 
+@property BOOL isSearchingPeripherals;
+
 @property (nonatomic,retain) CBCentralManager *centralManager;
 
 @property(readwrite, copy) ReadValueBlock readValueBlock;
 @property(readwrite, copy) WriteValueBlock writeValueBlock;
+@property(readwrite, copy) NotifyValueBlock notifyValueBlock;
+
 @property(readwrite, copy) PeripheralsBlock peripheralsBlock;
+
 @property(readwrite, copy) ConnetPeripheralBlock connectBlock;
+@property(readwrite, copy) ConnetPeripheralBlock disconnectBlock;
 
 @property(readwrite, copy) ServicesBlock servicesBlock;
 @property(readwrite, copy) CharacteristicsBlock characteristicsBlock;
@@ -62,18 +68,31 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         self.peripheralsBlock(nil, error);
     } else {
         [self.centralManager scanForPeripheralsWithServices:services options:nil];
+        self.isSearchingPeripherals = YES;
     }
 }
 
 - (void)stopSearchingForPeriphetals
 {
     [self.centralManager stopScan];
+    self.isSearchingPeripherals = NO;
 }
 
 - (void)connectToPeripheral:(CBPeripheral *)peripheral completion:(ConnetPeripheralBlock)block
 {
     self.connectBlock = block;
-    [self.centralManager connectPeripheral:peripheral options:nil];
+    switch (peripheral.state) {
+        case CBPeripheralStateConnecting:
+            [self.centralManager cancelPeripheralConnection:peripheral];
+        case CBPeripheralStateDisconnected:
+            [self.centralManager connectPeripheral:peripheral options:nil];
+            break;
+        case CBPeripheralStateConnected:
+            [self centralManager:self.centralManager didConnectPeripheral:peripheral];
+            break;
+        default:
+            break;
+    }
 }
 
 - (void)discoverServices:(NSArray *)services peripheral:(CBPeripheral *)peripheral completion:(ServicesBlock)block
@@ -91,8 +110,6 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 - (void)discoverCharacteristics:(NSArray *)characteristics service:(CBService *)service peripheral:(CBPeripheral *)peripheral completion:(CharacteristicsBlock)block
 {
     self.characteristicsBlock = block;
-    
-    
     NSArray *cachedCharacteristics = [self cachedCharacteristics:characteristics service:service];
     if (cachedCharacteristics && cachedCharacteristics.count > 0) {
         self.characteristicsBlock(cachedCharacteristics, nil);
@@ -107,6 +124,20 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
     self.readValueBlock = block;
     peripheral.delegate = self;
     [peripheral readValueForCharacteristic:characteristic];
+}
+
+- (void)writeValue:(NSData *)value peripheral:(CBPeripheral *)peripheral characteristic:(CBCharacteristic *)characteristic completions:(WriteValueBlock)block
+{
+    self.writeValueBlock = block;
+    peripheral.delegate = self;
+    [peripheral writeValue:value forCharacteristic:characteristic type:CBCharacteristicWriteWithResponse];
+}
+
+- (void)notifyValue:(CBPeripheral*)peripheral characterictic:(CBCharacteristic*)characteristic completion:(NotifyValueBlock)block
+{
+    self.notifyValueBlock = block;
+    peripheral.delegate = self;
+    [peripheral setNotifyValue:YES forCharacteristic:characteristic];
 }
 
 - (NSArray*)cachedServices:(NSArray*)services periphetal:(CBPeripheral*)periphetal
@@ -128,13 +159,14 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary *)advertisementData RSSI:(NSNumber *)RSSI
 {
-    NSUInteger index = [self.peripherals indexOfObject:peripheral];
+    NSDictionary *p = @{kPeriphetalIdentifier:peripheral,
+                        kPeriphetalRSSIIdentifier:RSSI};
+    
+    NSUInteger index = [self peripheral:peripheral inArray:self.peripherals];
     if (index == NSNotFound) {
-        [self.peripherals addObject:@{kPeriphetalIdentifier:peripheral,
-                                      kPeriphetalRSSIIdentifier:RSSI}];
+        [self.peripherals addObject:p];
     } else {
-        [self.peripherals replaceObjectAtIndex:index withObject:@{kPeriphetalIdentifier:peripheral,
-                                                                  kPeriphetalRSSIIdentifier:RSSI}];
+        [self.peripherals replaceObjectAtIndex:index withObject:p];
     }
     //code to be executed on the main thread when background task is finished
     self.peripheralsBlock(self.peripherals, nil);
@@ -142,10 +174,8 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
-    [self stopSearchingForPeriphetals];
     self.connectBlock(peripheral.state, nil);
 }
-
 
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
@@ -179,13 +209,50 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
     self.readValueBlock(characteristic.value, error);
 }
 
+- (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
+{
+    self.notifyValueBlock(characteristic.value, error);
+}
+
 #pragma mark - BluetoothManager methods
 
-- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(ReadValueBlock)block
+- (NSInteger)peripheral:(CBPeripheral*)peripheral inArray:(NSArray*)peripherals
+{
+    for (NSDictionary *dict in peripherals) {
+        CBPeripheral *p = dict[kPeriphetalIdentifier];
+        if ([p.identifier.UUIDString isEqualToString:peripheral.identifier.UUIDString]) {
+            return [peripherals indexOfObject:dict];
+        }
+    }
+    return NSNotFound;
+}
+
+- (CBService*)service:(CBUUID*)service inArray:(NSArray*)services
+{
+    for (CBService *s in services) {
+        if ([s.UUID.UUIDString isEqualToString:service.UUIDString]) {
+            return s;
+        }
+    }
+    return nil;
+}
+
+- (CBCharacteristic*)characterictic:(CBUUID*)characteristic inArray:(NSArray*)characteristics
+{
+    for (CBCharacteristic *c in characteristics) {
+        if ([c.UUID.UUIDString isEqualToString:characteristic.UUIDString]) {
+            return c;
+        }
+    }
+    return nil;
+}
+
+- (void)readCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block
 {
     CharacteristicsBlock characteristicsBlock = ^(NSArray* characteristics, NSError *error){
         if (!error) {
-            [self readValue:peripheral characteristic:[characteristics objectAtIndex:1] completions:block];
+            CBCharacteristic *c = [self characterictic:characteristic inArray:characteristics];
+            [self readValue:peripheral characteristic:c completions:block];
         } else {
             block(nil,error);
         }
@@ -193,9 +260,83 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
     
     ServicesBlock servicesBlock = ^(NSArray* services, NSError *error){
         if (!error) {
+            CBService *s = [self service:service inArray:services];
             [self discoverCharacteristics:@[characteristic]
-                                                      service:[services firstObject] peripheral:peripheral
-                                                   completion:characteristicsBlock];
+                                  service:s
+                               peripheral:peripheral
+                               completion:characteristicsBlock];
+        } else {
+            block(nil, error);
+        }
+    };
+    
+    ConnetPeripheralBlock completionBlock = ^(CBPeripheralState state, NSError* error){
+        if (state == CBPeripheralStateConnected) {
+            [self discoverServices:@[service]
+                        peripheral:peripheral
+                        completion:servicesBlock];
+        } else {
+            block(nil, error);
+        }
+    };
+    
+    [self connectToPeripheral:peripheral completion:completionBlock];
+}
+
+- (void)writeValue:(NSData*)value characteristic:(CBUUID*)characteristic service:(CBUUID*)service periphera:(CBPeripheral*)peripheral completion:(WriteValueBlock)block
+{
+    CharacteristicsBlock characteristicsBlock = ^(NSArray* characteristics, NSError *error){
+        if (!error) {
+            CBCharacteristic *c = [self characterictic:characteristic inArray:characteristics];
+            [self writeValue:value peripheral:peripheral characteristic:c completions:block];
+        } else {
+            block(nil,error);
+        }
+    };
+    
+    ServicesBlock servicesBlock = ^(NSArray* services, NSError *error){
+        if (!error) {
+            CBService *s = [self service:service inArray:services];
+            [self discoverCharacteristics:@[characteristic]
+                                  service:s
+                               peripheral:peripheral
+                               completion:characteristicsBlock];
+        } else {
+            block(nil, error);
+        }
+    };
+    
+    ConnetPeripheralBlock completionBlock = ^(CBPeripheralState state, NSError* error){
+        if (state == CBPeripheralStateConnected) {
+            [self discoverServices:@[service]
+                        peripheral:peripheral
+                        completion:servicesBlock];
+        } else {
+            block(nil, error);
+        }
+    };
+    
+    [self connectToPeripheral:peripheral completion:completionBlock];
+}
+
+- (void)notifyCharacteristic:(CBUUID*)characteristic service:(CBUUID*)service peripheral:(CBPeripheral*)peripheral completion:(ReadValueBlock)block
+{
+    CharacteristicsBlock characteristicsBlock = ^(NSArray* characteristics, NSError *error){
+        if (!error) {
+            CBCharacteristic *c = [self characterictic:characteristic inArray:characteristics];
+            [self notifyValue:peripheral characterictic:c completion:block];
+        } else {
+            block(nil,error);
+        }
+    };
+    
+    ServicesBlock servicesBlock = ^(NSArray* services, NSError *error){
+        if (!error) {
+            CBService *s = [self service:service inArray:services];
+            [self discoverCharacteristics:@[characteristic]
+                                  service:s
+                               peripheral:peripheral
+                               completion:characteristicsBlock];
         } else {
             block(nil, error);
         }
