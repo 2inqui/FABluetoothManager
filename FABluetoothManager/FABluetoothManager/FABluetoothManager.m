@@ -171,49 +171,67 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         [self.peripherals replaceObjectAtIndex:index withObject:p];
     }
     //code to be executed on the main thread when background task is finished
-    self.peripheralsBlock(self.peripherals, nil);
+    if (self.peripheralsBlock) {
+        self.peripheralsBlock(self.peripherals, nil);
+    }
 }
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
-    self.connectBlock(peripheral.state, nil);
+    if (self.connectBlock) {
+        self.connectBlock(peripheral.state, nil);
+    }
 }
 
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
-    self.connectBlock(peripheral.state, error);
+    if (self.connectBlock) {
+        self.connectBlock(peripheral.state, error);
+    }
 }
 
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
-    self.disconnectBlock(peripheral.state, error);
+    if (self.disconnectBlock) {
+        self.disconnectBlock(peripheral.state, error);
+    }
 }
 
 #pragma mark - CBPeriphitalDelegate
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error
 {
-    self.servicesBlock(peripheral.services, error);
+    if (self.servicesBlock) {
+        self.servicesBlock(peripheral.services, error);
+    }
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error
 {
-    self.characteristicsBlock(service.characteristics, error);
+    if (self.characteristicsBlock) {
+        self.characteristicsBlock(service.characteristics, error);
+    }
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
-    self.writeValueBlock(characteristic.value, error);
+    if (self.writeValueBlock) {
+        self.writeValueBlock(characteristic.value, error);
+    }
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
-    self.readValueBlock(characteristic.value, error);
+    if (self.readValueBlock) {
+        self.readValueBlock(characteristic.value, error);
+    }
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error
 {
-    self.notifyValueBlock(characteristic.value, error);
+    if (self.notifyValueBlock) {
+        self.notifyValueBlock(characteristic.value, error);
+    }
 }
 
 #pragma mark - BluetoothManager methods
