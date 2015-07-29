@@ -36,6 +36,8 @@ typedef void (^CharacteristicsBlock)(NSArray* characteristics, NSError* error);
 
 @interface FABluetoothManager : NSObject
 
+@property (nonatomic, retain, readonly) CBCentralManager *centralManager;
+
 @property id<FABluetoothManagerDelegate> delegate;
 
 @property NSMutableArray* peripherals;

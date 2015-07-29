@@ -18,8 +18,6 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 @property BOOL isSearchingPeripherals;
 
-@property (nonatomic,retain) CBCentralManager *centralManager;
-
 @property(readwrite, copy) ReadValueBlock readValueBlock;
 @property(readwrite, copy) WriteValueBlock writeValueBlock;
 @property(readwrite, copy) NotifyValueBlock notifyValueBlock;
@@ -35,6 +33,7 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 @end
 
 @implementation FABluetoothManager
+@synthesize centralManager;
 
 + (id)manager
 {
@@ -50,7 +49,7 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 {
     self = [super init];
     if (self) {
-        self.centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
+        centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:nil];
         
         self.peripherals = [[NSMutableArray alloc] init];
     }
@@ -80,6 +79,9 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)connectToPeripheral:(CBPeripheral *)peripheral connect:(ConnetPeripheralBlock)block disconnect:(ConnetPeripheralBlock)disconnect;
 {
+    if (self.isSearchingPeripherals) {
+        [self stopSearchingForPeriphetals];
+    }
     self.connectBlock = block;
     switch (peripheral.state) {
         case CBPeripheralStateConnecting:
