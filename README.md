@@ -51,16 +51,36 @@ ConnetPeripheralBlock completionBlock = ^(CBPeripheralState state, NSError* erro
 ```
 
 ## Discover services and characteristics
+```
+ServicesBlock servicesBlock = ^(NSArray* services, NSError *error){
+        if (!error) {
+  	    NSLog(@"%@",services);
+    	} else {
+            block(nil, error);
+        }
+    };
 
-Working...
+[manager discoverServices:@[service] // NSArray of CBUUID
+                        peripheral:peripheral
+                        completion:servicesBlock];
+```
 
 ## Read and write values for characteristics
 
-Working on more documentation...
+```
+[manager writeValue:nsData //NSData to be written
+          characteristic:characteristic // CBCharacteristic
+                 service:service // CBService
+               periphera:peripheral // CBPeripheral
+              completion:^(NSData* data, NSError *error){
+                  [self.centralManager cancelPeripheralConnection:peripheral]; // After write all the information don't forget to disconnect the peripheral
+                  block(data,error);
+              }
+              disconnect:nil]; // Handle the disconnect error
+```
 
 ## TODOS:
 
-* Notifications
 * Finish the README.
 * Fix typos
 
