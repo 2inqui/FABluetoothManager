@@ -8,6 +8,8 @@
 
 #import "FABluetoothManager.h"
 
+#define kConnectionTimeout 10.0
+
 const char * kBluetoothManagerIdentifier = "com.farellano.fabluetoothmanager";
 NSString * kBluetoothManagerError = @"com.farellano.fabluetoothmanager.error";
 
@@ -29,6 +31,8 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 @property(readwrite, copy) ServicesBlock servicesBlock;
 @property(readwrite, copy) CharacteristicsBlock characteristicsBlock;
+
+@property(nonatomic, retain) NSTimer *connectionTimer;
 
 @end
 
@@ -54,6 +58,15 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         self.peripherals = [[NSMutableArray alloc] init];
     }
     return self;
+}
+
+- (void)handleConnectionTimeout:(NSTimer*)timer
+{
+    if (self.connectBlock) {
+        self.connectBlock(CBPeripheralStateDisconnected, [NSError errorWithDomain:kBluetoothManagerError
+                                                                             code:2
+                                                                         userInfo:@{NSLocalizedDescriptionKey: @"Connection time out",NSLocalizedFailureReasonErrorKey: @"Please review the device is close and on"}]);
+    }
 }
 
 - (void)startSearchingForPeriphetals:(PeripheralsBlock)block services:(NSArray*)services;
@@ -95,6 +108,7 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
         default:
             break;
     }
+    self.connectionTimer = [NSTimer scheduledTimerWithTimeInterval:kConnectionTimeout target:self selector:@selector(handleConnectionTimeout:) userInfo:nil repeats:NO];
 }
 
 - (void)discoverServices:(NSArray *)services peripheral:(CBPeripheral *)peripheral completion:(ServicesBlock)block
@@ -178,6 +192,8 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral
 {
+    [self.connectionTimer invalidate];
+    self.connectionTimer = nil;
     if (self.connectBlock) {
         self.connectBlock(peripheral.state, nil);
     }
@@ -185,6 +201,8 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
+    [self.connectionTimer invalidate];
+    self.connectionTimer = nil;
     if (self.connectBlock) {
         self.connectBlock(peripheral.state, error);
     }
@@ -192,6 +210,8 @@ NSString * const kPeriphetalRSSIIdentifier = @"rssi";
 
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error
 {
+    [self.connectionTimer invalidate];
+    self.connectionTimer = nil;
     if (self.disconnectBlock) {
         self.disconnectBlock(peripheral.state, error);
     }
