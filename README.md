@@ -7,7 +7,7 @@ A simple bluetooth manager block based to interact with peripherals for iOS
 Just use cocoapods `pod 'FABluetoothManager'`
 Or add the `FABluetoothManager.{h.m}` files to your project
 
-See [Cocoapods](https://cocoapods.org/)
+See [CocoaPods](https://cocoapods.org/)
 
 # Getting started
 
